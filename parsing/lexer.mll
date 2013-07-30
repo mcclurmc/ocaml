@@ -255,6 +255,8 @@ let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let infixsymbolchar =
+  ['<' '>' '@' '^' '|' '&' '+' '-' '*' '/' '$' '%' ]
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_literal =
@@ -421,6 +423,7 @@ rule token = parse
   | ">}" { GREATERRBRACE }
   | "!"  { BANG }
 
+  | "::" { INFIXCON "::" }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }
@@ -441,6 +444,8 @@ rule token = parse
             { INFIXOP4(Lexing.lexeme lexbuf) }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | "::" infixsymbolchar + symbolchar *
+            { INFIXCON(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),

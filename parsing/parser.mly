@@ -316,7 +316,7 @@ let wrap_type_annotation newtypes core_type body =
 %token <char> CHAR
 %token CLASS
 %token COLON
-%token COLONCOLON
+%token COLONCOLON /* XXX delete this one day */
 %token COLONEQUAL
 %token COLONGREATER
 %token COMMA
@@ -344,6 +344,7 @@ let wrap_type_annotation newtypes core_type body =
 %token IF
 %token IN
 %token INCLUDE
+%token <string> INFIXCON
 %token <string> INFIXOP0
 %token <string> INFIXOP1
 %token <string> INFIXOP2
@@ -459,6 +460,7 @@ The precedences must be listed from low to high.
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
+%right    INFIXCON                      /* expr (e ::? e ::? e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
@@ -986,6 +988,7 @@ expr:
       { syntax_error() }
   | expr_comma_list %prec below_COMMA
       { mkexp(Pexp_tuple(List.rev $1)) }
+
   | constr_longident simple_expr %prec below_SHARP
       { mkexp(Pexp_construct(mkrhs $1 1, Some $2, false)) }
   | name_tag simple_expr %prec below_SHARP
@@ -998,10 +1001,17 @@ expr:
       { mkexp(Pexp_while($2, $4)) }
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for(mkrhs $2 2, $4, $6, $5, $8)) }
+
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+
+  | expr INFIXCON expr
+      { mkexp(Pexp_construct(mkrhs (Lident $2) 2, Some (ghexp(Pexp_tuple[$1;$3])), false)) }
+  | LPAREN INFIXCON RPAREN LPAREN expr COMMA expr RPAREN
+      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1705,6 +1715,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | INFIXCON                                    { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }

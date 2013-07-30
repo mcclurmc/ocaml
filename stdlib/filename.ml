@@ -205,6 +205,14 @@ let chop_extension name =
     else search_dot (i - 1) in
   search_dot (String.length name - 1)
 
+let extension name =
+  let len = String.length name in
+  let rec search_dot i =
+    if i < 0 || is_dir_sep name i then invalid_arg "Filename.extension"
+    else if name.[i] = '.' then String.sub name (i + 1) (len - i - 1)
+    else search_dot (i - 1) in
+  search_dot (len - 1)
+
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 

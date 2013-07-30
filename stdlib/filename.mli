@@ -55,6 +55,14 @@ val chop_extension : string -> string
    Raise [Invalid_argument] if the given name does not contain
    an extension. *)
 
+val extension : string -> string
+(** Return the extension of the given file name. The extension is the
+    shortest suffix starting with a period and not including a directory
+    separator, [.xyz] for instance.
+
+    Raise [Invalid_argument] if the given name does not contain
+    an extension. *)
+
 val basename : string -> string
 (** Split a file name into directory name / base file name.
    If [name] is a valid file name, then [concat (dirname name) (basename name)]

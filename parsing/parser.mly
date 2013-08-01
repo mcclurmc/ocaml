@@ -1008,9 +1008,11 @@ expr:
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
 
   | expr INFIXCON expr
-      { mkexp(Pexp_construct(mkrhs (Lident $2) 2, Some (ghexp(Pexp_tuple[$1;$3])), false)) }
+      { mkexp(Pexp_construct(mkrhs (Lident $2) 2,
+                             Some (ghexp(Pexp_tuple[$1;$3])), false)) }
   | LPAREN INFIXCON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
+      { mkexp(Pexp_construct(mkloc (Lident $2) (rhs_loc 2),
+                             Some (ghexp(Pexp_tuple[$5;$7])), false)) }
 
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }

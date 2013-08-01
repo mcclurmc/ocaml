@@ -1736,6 +1736,7 @@ constr_ident:
 /*  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
   | COLONCOLON                                  { "::" }
+  | INFIXCON                                    { $1 }
 /*  | LPAREN COLONCOLON RPAREN                    { "::" } */
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }

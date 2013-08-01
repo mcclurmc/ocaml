@@ -399,7 +399,6 @@ rule token = parse
   | "."  { DOT }
   | ".." { DOTDOT }
   | ":"  { COLON }
-  | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }
   | ":>" { COLONGREATER }
   | ";"  { SEMI }
@@ -423,7 +422,6 @@ rule token = parse
   | ">}" { GREATERRBRACE }
   | "!"  { BANG }
 
-  | "::" { INFIXCON "::" }
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
   | "+." { PLUSDOT }
@@ -446,6 +444,7 @@ rule token = parse
             { INFIXOP3(Lexing.lexeme lexbuf) }
   | "::" infixsymbolchar + symbolchar *
             { INFIXCON(Lexing.lexeme lexbuf) }
+  | "::"    { INFIXCON "::" }
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),

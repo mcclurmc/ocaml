@@ -122,13 +122,17 @@ let mkuplus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
-let mkexp_cons consloc args loc =
-  {pexp_desc = Pexp_construct(mkloc (Lident "::") consloc, Some args, false);
+let mkexp_infix_constructor c cloc args loc =
+  {pexp_desc = Pexp_construct(mkloc (Lident c) cloc, Some args, false);
    pexp_loc = loc}
 
-let mkpat_cons consloc args loc =
-  {ppat_desc = Ppat_construct(mkloc (Lident "::") consloc, Some args, false);
+let mkpat_infix_constructor c cloc args loc =
+  {ppat_desc = Ppat_construct(mkloc (Lident c) cloc, Some args, false);
    ppat_loc = loc}
+
+let mkexp_cons consloc args loc = mkexp_infix_constructor "::" consloc args loc
+
+let mkpat_cons consloc args loc = mkpat_infix_constructor "::" consloc args loc
 
 let rec mktailexp nilloc = function
     [] ->
@@ -316,7 +320,6 @@ let wrap_type_annotation newtypes core_type body =
 %token <char> CHAR
 %token CLASS
 %token COLON
-%token COLONCOLON /* XXX delete this one day */
 %token COLONEQUAL
 %token COLONGREATER
 %token COMMA
@@ -459,7 +462,6 @@ The precedences must be listed from low to high.
 %nonassoc below_EQUAL
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
-%right    COLONCOLON                    /* expr (e :: e :: e) */
 %right    INFIXCON                      /* expr (e ::? e ::? e) */
 %left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
@@ -1002,17 +1004,12 @@ expr:
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for(mkrhs $2 2, $4, $6, $5, $8)) }
 
-  | expr COLONCOLON expr
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
-
   | expr INFIXCON expr
-      { mkexp(Pexp_construct(mkrhs (Lident $2) 2,
-                             Some (ghexp(Pexp_tuple[$1;$3])), false)) }
+      { mkexp_infix_constructor $2 (rhs_loc 2)
+                               (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
   | LPAREN INFIXCON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp(Pexp_construct(mkloc (Lident $2) (rhs_loc 2),
-                             Some (ghexp(Pexp_tuple[$5;$7])), false)) }
+      { mkexp_infix_constructor $2 (rhs_loc 2)
+                               (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
 
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
@@ -1281,13 +1278,15 @@ pattern:
       { mkpat(Ppat_construct(mkrhs $1 1, Some $2, false)) }
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
-  | pattern COLONCOLON pattern
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3])) (symbol_rloc()) }
-  | pattern COLONCOLON error
+  | pattern INFIXCON pattern
+      { mkpat_infix_constructor $2 (rhs_loc 2) (ghpat(Ppat_tuple[$1;$3]))
+                               (symbol_rloc()) }
+  | pattern INFIXCON error
       { expecting 3 "pattern" }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
+  | LPAREN INFIXCON RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat_infix_constructor $2 (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7]))
+                                (symbol_rloc()) }
+  | LPAREN INFIXCON RPAREN LPAREN pattern COMMA pattern error
       { unclosed "(" 4 ")" 8 }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
@@ -1737,7 +1736,6 @@ constr_ident:
     UIDENT                                      { $1 }
 /*  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
-  | COLONCOLON                                  { "::" }
   | INFIXCON                                    { $1 }
 /*  | LPAREN COLONCOLON RPAREN                    { "::" } */
   | FALSE                                       { "false" }

@@ -253,10 +253,10 @@ let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
-let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let infixsymbolchar =
-  ['<' '>' '@' '^' '|' '&' '+' '-' '*' '/' '$' '%' ]
+  ['<' '@' '^' '|' '&' '+' '-' '*' '/' '$' '%' ':' ]
+let symbolchar =
+  infixsymbolchar | ['!' '.' '=' '?' '|' '~' '>']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_literal =
@@ -442,9 +442,9 @@ rule token = parse
             { INFIXOP4(Lexing.lexeme lexbuf) }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
-  | "::" infixsymbolchar + symbolchar *
+  | ":" infixsymbolchar + symbolchar *
             { INFIXCON(Lexing.lexeme lexbuf) }
-  | "::"    { INFIXCON "::" }
+  (* | "::"    { INFIXCON "::" } *)
   | eof { EOF }
   | _
       { raise (Error(Illegal_character (Lexing.lexeme_char lexbuf 0),
